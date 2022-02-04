@@ -4,12 +4,16 @@ const e = require('express');
 
 const PORT = process.env.PORT || 3007;
 const INDEX = '/index.html';
+
+let wss;
 let rooms = {}
 
 const server = express()
     .use(express.json())
     .post('/publish', (req, res) => {
+        
         const {key, message, id, email} = req.body;
+        console.log('Publish request received', {message});
 
         const roomKey = encodeURIComponent('/'+key);
         console.log({
@@ -23,25 +27,19 @@ const server = express()
             })
         }
         console.log('Publish request received', {roomKey});
-        if (wss && wss.clients) {
-            console.log(JSON.stringify({clientsInRoom: rooms[roomKey].clients.length}, null, 2))
-            if(rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
-                rooms[roomKey].clients.forEach(function each(client) {
-                    console.log('Publishing to client')
-                    if (client.readyState === 1) {
-                        client.send(JSON.stringify({
-                            message, id, email
-                        }, { binary: false }));
-                    } else {
-                        console.log('not ready');
-                    }
-                });
-            } else {
-                console.log('No active clients')
-            }
-
+        if(rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
+            rooms[roomKey].clients.forEach(function each(client) {
+                console.log('Publishing to client')
+                if (client.readyState === 1) {
+                    client.send(JSON.stringify({
+                        message, id, email
+                    }, { binary: false }));
+                } else {
+                    console.log('Client not ready');
+                }
+            });
         } else {
-            console.log('No wss clients', { wss })
+            console.log('No active clients')
         }
         res.send('ok published');
     })
