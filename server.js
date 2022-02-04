@@ -4,8 +4,6 @@ const e = require('express');
 
 const PORT = process.env.PORT || 3007;
 const INDEX = '/index.html';
-
-let wws;
 let rooms = {}
 
 const server = express()
@@ -26,7 +24,7 @@ const server = express()
         }
         console.log('Publish request received', {roomKey});
         if (wss && wss.clients) {
-            console.log(JSON.stringify({a: rooms[roomKey].clients.length}, null, 2))
+            console.log(JSON.stringify({clientsInRoom: rooms[roomKey].clients.length}, null, 2))
             if(rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
                 rooms[roomKey].clients.forEach(function each(client) {
                     console.log('Publishing to client')
@@ -53,7 +51,7 @@ const server = express()
 wss = new WSServer({ server });
 
 wss.on('connection', (ws, req) => {
-    const roomKey = encodeURIComponent(req.url) // 'cucu' // req.url;
+    const roomKey = encodeURIComponent(req.url);
     console.log('Client connected', {roomKey});
     
 
@@ -74,15 +72,5 @@ wss.on('connection', (ws, req) => {
         const restClients = rooms[roomKey]?.clients ? rooms[roomKey].clients.filter((client) => client !== ws) : [];
         rooms[roomKey].clients = restClients;
         console.log('Done removing', {len: JSON.stringify(rooms[roomKey]?.clients?.length)})
-    });
-
-    ws.on('message', function message(data, isBinary) {
-        console.log('Client received message');
-        rooms[roomKey].clients.forEach(function each(client) {
-            console.log('I will send this this to client', client);
-            if (client.readyState === 1) {
-                client.send(data, { binary: isBinary });
-            }
-        });
     });
 });
