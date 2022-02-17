@@ -9,25 +9,26 @@ let wss;
 let rooms = {}
 
 const server = express()
-    .use(express.json())
     .use(cors())
-    .get('/chat/:key', (req, res) => {
-        const {key} = req.params;
-        const roomKey = encodeURIComponent('/' + key);
+    .use(express.json())
+    .get('/chat/:roomKey', (req, res) => {
+        const {roomKey} = req.params;
+        console.log('Get request received', {roomKey})
 
         if(rooms[roomKey] && rooms[roomKey].chat) {
-            res.send(rooms[roomKey].chat)
+            res.send({data: rooms[roomKey].chat})
+        } else {
+            res.send(`not found ${roomKey}`)
         }
-        console.log('Get request received', {key})
-        res.send(`not found ${key}`)
+        
+        
     })
-    .post('/publish/:key', (req, res) => {
-        const {key} = req.params;
+    .post('/publish/:roomKey', (req, res) => {
+        const {roomKey} = req.params;
         const body = req.body;
 
-        console.log('Publish request received', { key, body });
+        console.log('Publish request received', { roomKey, req });
 
-        const roomKey = encodeURIComponent('/' + key);
         console.log({
             roomKey,
             keys: Object.keys(rooms)
@@ -43,7 +44,9 @@ const server = express()
         if(rooms[roomKey] && rooms[roomKey].chat) {
             rooms[roomKey].chat.push(body)
         } else {
-            rooms[roomKey].chat = [body]
+            rooms[roomKey] = {
+                chat: [body]
+            }
         }
 
         if (rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
