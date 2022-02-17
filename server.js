@@ -10,29 +10,47 @@ let rooms = {}
 
 const server = express()
     .use(express.json())
-    .post('/publish', (req, res) => {
-        
-        const {key, message, id, email} = req.body;
-        console.log('Publish request received', {message});
+    .get('/chat/:key', (req, res) => {
+        const {key} = req.params;
+        const roomKey = encodeURIComponent('/' + key);
 
-        const roomKey = encodeURIComponent('/'+key);
+        if(rooms[roomKey] && rooms[roomKey].chat) {
+            res.send(rooms[roomKey].chat)
+        }
+        console.log('Get request received', {key})
+        res.send(`not found ${key}`)
+    })
+    .post('/publish/:key', (req, res) => {
+        const {key} = req.params;
+        const body = req.body;
+
+        console.log('Publish request received', { key, body });
+
+        const roomKey = encodeURIComponent('/' + key);
         console.log({
             roomKey,
             keys: Object.keys(rooms)
         })
-        if(!roomKey) {
+        if (!roomKey) {
 
             res.status(404).send({
                 ok: false
             })
         }
-        console.log('Publish request received', {roomKey});
-        if(rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
+        console.log('Publish request received', { roomKey });
+
+        if(rooms[roomKey] && rooms[roomKey].chat) {
+            rooms[roomKey].chat.push(body)
+        } else {
+            rooms[roomKey].chat = [body]
+        }
+
+        if (rooms[roomKey] && rooms[roomKey].clients && rooms[roomKey].clients.length > 0) {
             rooms[roomKey].clients.forEach(function each(client) {
                 console.log('Publishing to client')
                 if (client.readyState === 1) {
                     client.send(JSON.stringify({
-                        message, id, email
+                        ...body
                     }, { binary: false }));
                 } else {
                     console.log('Client not ready');
@@ -50,13 +68,13 @@ wss = new WSServer({ server });
 
 wss.on('connection', (ws, req) => {
     const roomKey = encodeURIComponent(req.url);
-    console.log('Client connected', {roomKey});
-    
+    console.log('Client connected', { roomKey });
 
-    if(rooms[roomKey] && Array.isArray(rooms[roomKey].clients)) {
+
+    if (rooms[roomKey] && Array.isArray(rooms[roomKey].clients)) {
         rooms[roomKey].clients.push(ws);
     } else {
-        if(rooms[roomKey]) {
+        if (rooms[roomKey]) {
             rooms[roomKey].clients = [ws]
         } else {
             rooms[roomKey] = {
@@ -66,9 +84,9 @@ wss.on('connection', (ws, req) => {
     }
 
     ws.on('close', () => {
-        console.log('Closed connection, will remove client', {len: JSON.stringify(rooms[roomKey]?.clients?.length)})
+        console.log('Closed connection, will remove client', { len: JSON.stringify(rooms[roomKey]?.clients?.length) })
         const restClients = rooms[roomKey]?.clients ? rooms[roomKey].clients.filter((client) => client !== ws) : [];
         rooms[roomKey].clients = restClients;
-        console.log('Done removing', {len: JSON.stringify(rooms[roomKey]?.clients?.length)})
+        console.log('Done removing', { len: JSON.stringify(rooms[roomKey]?.clients?.length) })
     });
 });
