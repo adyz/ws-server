@@ -1,6 +1,6 @@
 const { Server: WSServer } = require('ws');
 const express = require('express');
-const e = require('express');
+var cors = require('cors')
 
 const PORT = process.env.PORT || 3007;
 const INDEX = '/index.html';
@@ -10,6 +10,7 @@ let rooms = {}
 
 const server = express()
     .use(express.json())
+    .use(cors())
     .get('/chat/:key', (req, res) => {
         const {key} = req.params;
         const roomKey = encodeURIComponent('/' + key);
