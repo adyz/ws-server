@@ -10,7 +10,7 @@ let wss;
 let rooms = {}
 
 
-function sendThis(theRoomKey, theBody){
+function sendThis(theRoomKey, theBody) {
     if (rooms[theRoomKey] && rooms[theRoomKey].clients && rooms[theRoomKey].clients.length > 0) {
         rooms[theRoomKey].clients.forEach(function each(client) {
             console.log('Publishing to client')
@@ -27,37 +27,62 @@ function sendThis(theRoomKey, theBody){
     }
 }
 
+function writeThis(theRoomKey, theBody) {
+    if (rooms[theRoomKey] && rooms[theRoomKey].chat) {
+        rooms[theRoomKey].chat.push(theBody)
+    } else {
+        rooms[theRoomKey] = {
+            chat: [theBody]
+        }
+    }
+}
+
+
+let spamId;
+
 const server = express()
     .use(cors())
     .use(express.json())
     .get('/chat/:roomKey', (req, res) => {
-        const {roomKey} = req.params;
-        console.log('Get request received', {roomKey})
+        const { roomKey } = req.params;
+        console.log('Get request received', { roomKey })
 
-        if(rooms[roomKey] && rooms[roomKey].chat) {
-            res.send({data: rooms[roomKey].chat})
+        if (rooms[roomKey] && rooms[roomKey].chat) {
+            setTimeout(() => {
+                res.send({ 
+                    data: rooms[roomKey].chat.map((chatItem) => chatItem.content)
+                })
+            }, 5000)
         } else {
             res.send(`not found ${roomKey}`)
         }
-        
-        
+
+
     })
-    .get('/spam', (req, res) => {
+    .get('/spam/:roomKey', (req, res) => {
+        const { roomKey } = req.params;
+        if (!spamId) {
 
-        setInterval(() => {
+            res.send({
+                ok: 'spam started for ' + roomKey
+            })
 
-            const room = 'robo-dino-5de3b';
-            const gen = generateChatMessage(Math.random() * 1000, new Date().getMilliseconds())
-            sendThis(room, gen)
-        }, 1000);
-
-
-        res.send({
-            ok: true
-        })
+            spamId = setInterval(() => {
+                const room = roomKey;
+                const gen = generateChatMessage(Math.random() * 1000, new Date())
+                writeThis(room, gen)
+                sendThis(room, gen)
+            }, 1000);
+        } else {
+            clearInterval(spamId)
+            spamId = null
+            res.send({
+                ok: 'spam ended for all'
+            })
+        }
     })
     .post('/publish/:roomKey', (req, res) => {
-        const {roomKey} = req.params;
+        const { roomKey } = req.params;
         const body = req.body;
 
         console.log('Publish request received', { roomKey });
@@ -68,14 +93,8 @@ const server = express()
                 ok: false
             })
         } else {
-            if(rooms[roomKey] && rooms[roomKey].chat) {
-                rooms[roomKey].chat.push(body)
-            } else {
-                rooms[roomKey] = {
-                    chat: [body]
-                }
-            }
-    
+            body.content.created_at = new Date();
+            writeThis(roomKey, body)
             sendThis(roomKey, body)
             res.send('ok published');
         }

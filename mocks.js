@@ -28,14 +28,12 @@ function generateChatMessage(message_id, created_at) {
                 stream: '1',
                 text: `Text message ${message_id}`,
                 message_local_id: `${message_id}`,
-                type: chatMessageType.NORMAL
+                type: chatMessageType.NORMAL,
+                created_at: created_at ? created_at : new Date()
             },
-            created_at: created_at ? created_at : new Date().getMilliseconds() + message_id
         }
 }
 
 module.exports = {
     generateChatMessage
 }
-
-const chatHistory = [Array.from({length: 10}, (_, i) => generateChatMessage(i))]
