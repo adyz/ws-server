@@ -25,6 +25,7 @@ function generateChatMessage(message_id, created_at) {
                     uuid: '1_user',
                     name: 'Test'
                 },
+                from_server: true,
                 stream: '1',
                 text: `Text message ${message_id}`,
                 message_local_id: `${message_id}`,

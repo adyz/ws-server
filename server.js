@@ -37,6 +37,15 @@ function writeThis(theRoomKey, theBody) {
     }
 }
 
+function deleteThis(theRoomKey, theBody) {
+    if (rooms[theRoomKey] && rooms[theRoomKey].chat) {
+        const index = rooms[theRoomKey].chat.findIndex((chatItem) => chatItem.message_local_id === theBody.content.message_local_id);
+        rooms[theRoomKey].chat.splice(index, 1)
+    } else {
+        console.log('Already missing')
+    }
+}
+
 
 let spamId;
 
@@ -93,8 +102,27 @@ const server = express()
                 ok: false
             })
         } else {
+            body.content.from_server = true
             body.content.created_at = new Date();
             writeThis(roomKey, body)
+            sendThis(roomKey, body)
+            res.send('ok published');
+        }
+
+    })
+    .post('/delete/:roomKey', (req, res) => {
+        const { roomKey } = req.params;
+        const body = req.body;
+
+        console.log('Publish request received', { roomKey });
+
+        if (!roomKey) {
+            console.log('No room with this key')
+            res.status(404).send({
+                ok: false
+            })
+        } else {
+            deleteThis(roomKey, body)
             sendThis(roomKey, body)
             res.send('ok published');
         }
