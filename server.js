@@ -128,6 +128,24 @@ const server = express()
         }
 
     })
+    .post('/react/:roomKey', (req, res) => {
+        const { roomKey } = req.params;
+        const body = req.body;
+
+        console.log('Publish request received', { roomKey });
+
+        if (!roomKey) {
+            console.log('No room with this key')
+            res.status(404).send({
+                ok: false
+            })
+        } else {
+            //deleteThis(roomKey, body)
+            sendThis(roomKey, body)
+            res.send('ok published');
+        }
+
+    })
     .use((req, res) => res.sendFile(INDEX, { root: __dirname }))
     .listen(PORT, () => console.log(`Listening on ${PORT}`));
 
